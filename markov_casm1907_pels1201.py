@@ -1,5 +1,5 @@
-### APP5-info
-### Travail par: Marie-Eve Castonguay casm1907
+# APP5-informatique - Structures de donnees et complexites GIF270
+# Travail par: Marie-Eve Castonguay casm1907 19025939 T4
 
 import math
 import time
@@ -17,40 +17,9 @@ import re
 PONC = ["!", '"', "'", ")", "(", ",", ".", ";", ":", "?", "-", "_", "»", "«"]
 
 #  Vous devriez inclure vos classes et methodes ici, qui seront appellees a partir du main
-def mergeSort(array):
-    if len(array) > 1:
-        mid = len(array) // 2  # Finding the mid of the array
-        L = array[:mid]  # Dividing the array elements
-        R = array[mid:]  # into 2 halves
-
-        mergeSort(L)  # Sorting the first half
-        mergeSort(R)  # Sorting the second half
-
-        i = j = k = 0
-
-        # Copy data to temp arrays L[] and R[]
-        while i < len(L) and j < len(R):
-            if L[i].count < R[j].count:
-                array[k] = L[i]
-                i += 1
-            else:
-                array[k] = R[j]
-                j += 1
-            k += 1
-
-        # Checking if any element was left
-        while i < len(L):
-            array[k] = L[i]
-            i += 1
-            k += 1
-
-        while j < len(R):
-            array[k] = R[j]
-            j += 1
-            k += 1
-    return array
 
 # Class that parses a txt file or all files in directory into a list of words, and returns it in an array (results)
+# Only done once, Class Statistics handles the rest of the operations.
 class TextParser:
     def __init__(self, includePonctuation = False):
         self.includePonctuation = includePonctuation
@@ -89,7 +58,9 @@ class TextParser:
             if file != ".DS_Store": # Hidden directory that makes the program crash. We want to process all authors directories only.
                 self.processFile(rootDirectory + "/" + file, results)
 
-# Class that stores an n-gram's information (values: String, Count, dictionnary of probable next Ngrams (bigrams only))
+# Class that stores an n-gram's information
+# Attributes: n-gram String, Count, dictionnary of probable next n-grams (only used for bigrams)
+# Methods used by class Statistics: calculate bi-gram probabilities, generate next bi-gram
 class NgrammeNode:
     def __init__(self, ngrammeString):
         self.ngrammeString = ngrammeString
@@ -103,8 +74,8 @@ class NgrammeNode:
         self.count += 1
 
     def printNode(self):
+        print('\n')
         print("{0} : {1} fois".format(self.ngrammeString, self.count))
-
 
     def increaseNextNodeCount(self, nextNgrammeString):
         nextNgrammeNode = self.nextNgrammeDict.get(nextNgrammeString)
@@ -116,17 +87,17 @@ class NgrammeNode:
 
     def calculateBigrammeProbability(self):
         if len(self.nextNgrammeValues) == 0:
-            self.nextNgrammeValues = list(self.nextNgrammeDict.values())  #Stocks values of nextDict in list
+            self.nextNgrammeValues = list(self.nextNgrammeDict.values())  # Stores values of nextDict in list
 
             total = 0
             i = 0
-            while i < len(self.nextNgrammeValues): # Compiles the total number of occurences of all possible next ngrams
+            while i < len(self.nextNgrammeValues):  # Compiles the total number of occurences of all the next n-grams
                 node = self.nextNgrammeValues[i]
                 total = total + node.count
                 i = i + 1
 
             i = 0
-            while i < len(self.nextNgrammeValues):    # Calculates probability of each possible next ngram
+            while i < len(self.nextNgrammeValues):  # Calculates probability of each possible next ngram
                 node = self.nextNgrammeValues[i]
                 prob = node.count / total
                 self.nextProbability.append(prob)
@@ -136,31 +107,23 @@ class NgrammeNode:
         if len(self.nextNgrammeDict.values()) == 0:  # Handles the case where a node doesn't have any NextNgrammeStrings
             return None
 
-        nextNode = numpy.random.choice(self.nextNgrammeValues, 1, False, self.nextProbability)  # Returns an array of 1
+        nextNode = numpy.random.choice(self.nextNgrammeValues, 1, False, self.nextProbability)  # Returns array len(1)
         nextString = nextNode[0].ngrammeString
         return nextString
 
-# Class that takes in a list of words (file or all files in directory) and generates a dictionnary of ngrams
-# Attributes: Size of n-gram, Dictionnary of n-grams, sorted list of Ngrams
+# Class that takes in a list of words (from TextParser) and generates a dictionnary of n-grams
+# Attributes: Size of n-gram (1 or 2), Dictionnary of n-grams, sorted list of n-grams (according to frequency)
 # Methods: Calculate distances between two parsedTexts, get Nieme most frequent ngram, generate text
 class Statistics:
-    listOfAllWords = []
+    # listOfAllWords = []
     def __init__(self, parsedText, nsize = 1):
         self.nsize = nsize
         self.ngrammeNodeDict = {}  # dictionnary of nodes of all n-grams for given text
         self.sortedNgrammeNodeList = []
+        self.parsedText = parsedText
         self.generateStats(parsedText)
 
-    def initializeNgrammeProbabilities(self):
-        for node in self.ngrammeNodeDict.values():
-            if self.nsize == 1:
-                for i in range(node.count):
-                    self.listOfAllWords.append(node.ngrammeString)  # Appends each unigram to list, including multiples
-
-            if self.nsize == 2:
-                node.calculateBigrammeProbability()
-
-    def generateStats(self, parsedText):  # Updates dictionary for a parsed text(s)
+    def generateStats(self, parsedText):  # Updates dictionary for the parsedText
         index = 0
         wordCount = len(parsedText)
 
@@ -177,9 +140,9 @@ class Statistics:
 
             # Increase NgrammeNode count
             ngrammeNode = self.ngrammeNodeDict.get(currentngrammeString)
-            if ngrammeNode != None:
+            if ngrammeNode != None:  # Node for currentngramme already exists
                 ngrammeNode.increaseCount()
-            else:
+            else:  # Node for currentngramme doesn't exists, we create one.
                 self.ngrammeNodeDict[currentngrammeString] = NgrammeNode(currentngrammeString)
 
             # Populate dictionnary of possible next bigrammes (bigrammes only)
@@ -188,20 +151,23 @@ class Statistics:
                 previousNgrammeNode.increaseNextNodeCount(currentngrammeString)
             previousngrammeString = currentngrammeString
             index = index + 1
-        self.initializeNgrammeProbabilities()
 
-    def printNgrammesStat(self):
-        for value in self.ngrammeNodeDict.values():
-            print(value.ngrammeString, value.count)
+        if self.nsize == 2:
+            self.initializeBigrammeProbabilities()
+
+    def initializeBigrammeProbabilities(self):
+        for node in self.ngrammeNodeDict.values():
+            if self.nsize == 2:
+                node.calculateBigrammeProbability()  # Generates probabilities of all bi-grams
 
     def calculateDistance(self, otherStat):
-        #Etablir les ngrammes en commun de deux textes
+        # Establish list of common n-grams for two dictionaries
         commonNgrammeKeys = list(set(self.ngrammeNodeDict.keys() & otherStat.ngrammeNodeDict.keys()))
 
-        selfCountList = []  # Liste de comptes pour les keys en commun dans un texte
+        selfCountList = []  # Liste de frequences pour les keys en commun dans un texte
         totalSelfCount = 0  # Nombre total des mots communs pour un texte (incluant les doublons)
 
-        otherCountList = []  # Liste de comptes pour les keys en commun dans l'autre texte
+        otherCountList = []  # Liste de frequences pour les keys en commun dans l'autre texte
         totalOtherCount = 0   # Nombre total des mots communs pour l'autre texte (incluant les doublons)
 
         for key in commonNgrammeKeys:
@@ -223,26 +189,39 @@ class Statistics:
         distance = math.sqrt(sum)
         return distance
 
-    def getNemeMostFrequentNgrammeString(self,position):
+    def getCount(self, node):
+        return node.count
+
+    def getNgrammeAtPosition(self,position):
         # Tri des Ngrammes en ordre croissant selon leur frequence (moins commun au plus commun)
+        ### Tri avec mergeSort
         if not self.sortedNgrammeNodeList:
             self.sortedNgrammeNodeList = list(self.ngrammeNodeDict.values())
             mergeSort(self.sortedNgrammeNodeList)
         node = self.sortedNgrammeNodeList[-position]
+        node.printNode()
         return node.ngrammeString
+
+        ### Tri avec methode .sort()
+        # if not self.sortedNgrammeNodeList:
+        #     self.sortedNgrammeNodeList = list(self.ngrammeNodeDict.values())
+        #     self.sortedNgrammeNodeList.sort(key=self.getCount, reverse=True)
+        # node = self.sortedNgrammeNodeList[position - 1]
+        # node.printNode()
+        # return node.ngrammeString
 
     def generateText(self, nbwords):
         results = []
-        if self.nsize == 1:
+        if self.nsize == 1:  # Unigram generation: pick a random word in all possible words of parsedText
             i = 0
             while i < nbwords:
-                word = randint(0, len(self.listOfAllWords))
-                results.append(self.listOfAllWords[word])
+                word = randint(0, len(self.parsedText))
+                results.append(self.parsedText[word])
                 i = i+1
 
         if self.nsize == 2:
             randomChoice = randint(1, 10)
-            firstNgrammeString = self.getNemeMostFrequentNgrammeString(randomChoice)
+            firstNgrammeString = self.getNgrammeAtPosition(randomChoice)
             currentNgrammeString = firstNgrammeString
 
             splitNgrammeString = firstNgrammeString.split()
@@ -257,8 +236,7 @@ class Statistics:
 
                 if currentNgrammeString is None:
                     randomChoice = randint(1, 10)
-                    firstNgrammeString = self.getNemeMostFrequentNgrammeString(randomChoice)
-                    currentNgrammeString = firstNgrammeString
+                    currentNgrammeString = self.getNgrammeAtPosition(randomChoice)
 
                 splitNgrammeString = currentNgrammeString.split()
                 results.append(splitNgrammeString[1])
@@ -281,107 +259,48 @@ class Statistics:
         tfile.close()
         print("Fichier généré a éte mis à jour pour: ", author)
 
-def unitTestGenerateStats():
-    ### CREATES EMPTY LISTS TO STORE RESULTS OF PASED FILES
-    zolaFile1Words = []
-    zolaFile2Words = []
-    zolaDirWords = []
-    verneDirWords = []
+    def printNgrammesStat(self):
+        for value in self.ngrammeNodeDict.values():
+            print(value.ngrammeString, value.count)
 
-    textParser = TextParser(False)
+def mergeSort(array):
+    if len(array) > 1:
+        mid = len(array) // 2  # Finding the mid of the array
+        L = array[:mid]  # Dividing the array elements
+        R = array[mid:]  # into 2 halves
 
-    # ### PARSES ALL FILES IN DIRECTORY AND RETURNS ALL WORDS IN LIST
-    # textParser.processDirectory("./TextesPourEtudiants/Zola", zolaDirWords)
-    # textParser.processDirectory("./TextesPourEtudiants/Verne", verneDirWords)
-    #
-    # ### CREATES STATISTICS FOR PARSED TEXT FILE
-    # zolaFile1Stats = Statistics(zolaFile1Words)
-    # zolaFile2Stats = Statistics(zolaFile2Words)
-    # zolaStats = Statistics(zolaDirWords)
-    # verneStats = Statistics(verneDirWords)
-    #
-    # # zolaFile1Stats.calculateDistance(zolaFile2Stats)
-    # # #print(len(zolaFile1Stats.ngrammeNodeDict.keys()))
-    # #
-    # # zolaFile2Stats.calculateDistance(zolaFile1Stats)
-    # # #print(len(zolaFile2Stats.ngrammeNodeDict.keys()))
-    #
-    # ### CALCULATES DISTANCE BETWEEN TWO TEXTS
-    # zolaFile1Stats.calculateDistance(zolaStats)
-    # zolaFile1Stats.calculateDistance(verneStats)
+        mergeSort(L)  # Sorting the first half
+        mergeSort(R)  # Sorting the second half
 
-    line = "The world is, sometimes;kinda cool ish... maybe... world"
-    results = []
-    textParser = TextParser(False)
-    textParser.processLine(line, results)
-    lineStats = Statistics(results, 1)
-    #lineStats.printNgrammesStat()
-def unitTestMergeSort():
-    dict = {}
-    dict["key1"] = NgrammeNode("key1")
-    dict["key1"].increaseCount()
-    dict["key1"].increaseCount()
-    dict["key1"].increaseCount()
-    dict["key1"].increaseCount()
-    dict["key2"] = NgrammeNode("key2")
-    dict["key2"].increaseCount()
-    dict["key2"].increaseCount()
-    dict["key3"] = NgrammeNode("key3")
-    dict["key3"].increaseCount()
-    dict["key3"].increaseCount()
-    dict["key3"].increaseCount()
-    dict["key4"] = NgrammeNode("key4")
-    dict["key4"].increaseCount()
-    dict["key5"] = NgrammeNode("key5")
-    dict["key5"].increaseCount()
-    dict["key5"].increaseCount()
-    dict["key5"].increaseCount()
-    dict["key5"].increaseCount()
-    dict["key5"].increaseCount()
+        i = j = k = 0
 
-    v = list(dict.values())
-    for node in v:
-        node.printNode()
+        # Copy data to temp arrays L[] and R[]
+        while i < len(L) and j < len(R):
+            if L[i].count < R[j].count:
+                array[k] = L[i]
+                i += 1
+            else:
+                array[k] = R[j]
+                j += 1
+            k += 1
 
-    mergeSort(v)
+        # Checking if any element was left
+        while i < len(L):
+            array[k] = L[i]
+            i += 1
+            k += 1
 
-    print(v)
-    for node in v:
-        node.printNode()
-def unitTestFrequency():
-    zolaFile1Words = []
-    textParser = TextParser(args.P, )
-    textParser.processFile(args.d + "/Zola/Emile Zola - Germinal.txt", zolaFile1Words)
+        while j < len(R):
+            array[k] = R[j]
+            j += 1
+            k += 1
+    return array
 
-    print("LENGTH ZOLA FILE: ", len(zolaFile1Words))
-    zolaFile1Stats = Statistics(zolaFile1Words,2)
-    for i in range(50,100):
-        print(zolaFile1Stats.getNemeMostFrequentNgrammeString(i))
-def unitTestMarkov():
-    line = "a a b a b a a b c"
-    decomposedLine = []
-    decomposedDir = []
-    textParser = TextParser(False)
+# Main: lecture des parametres et appel des methodes appropriees
 
-    # textParser.processLine(line, decomposedLine)
-    # lineStats = Statistics(decomposedLine, 2)
-    # lineStats.generateText(30)
-
-    textParser.processDirectory("./TextesPourEtudiants/Zola", decomposedDir)
-    zolaStats = Statistics(decomposedDir, 2)
-    zolaStats.generateText(50)
-def unitTestLineParse():
-    line = "Allo! Je pense que, peut-etre, ce n'est pas si mal( que ca."
-    results = []
-    textParser = TextParser()
-    textParser.processLine(line,results)
-    print(results)
-
-### Main: lecture des parametres et appel des methodes appropriees
-###
-###       argparse permet de lire les parametres sur la ligne de commande
-###             Certains parametres sont obligatoires ("required=True")
-###             Ces parametres doivent etres fournis a python lorsque l'application est execu
+#       argparse permet de lire les parametres sur la ligne de commande
+#             Certains parametres sont obligatoires ("required=True")
+#             Ces parametres doivent etres fournis a python lorsque l'application est execu
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='markov_casm1907_pels1201.py')
     parser.add_argument('-d', required=True, help='Repertoire contenant les sous-repertoires des auteurs')
@@ -397,9 +316,9 @@ if __name__ == "__main__":
     parser.add_argument('-A', action='store_true', help = 'Tous les auteurs sont a traiter')
     args = parser.parse_args()
 
-    ### Lecture du repertoire des auteurs, obtenir la liste des auteurs
-    ### Note:  args.d est obligatoire
-    ### auteurs devrait comprendre la liste des repertoires d'auteurs, peu importe le systeme d'exploitation
+    # Lecture du repertoire des auteurs, obtenir la liste des auteurs
+    # Note:  args.d est obligatoire
+    # auteurs devrait comprendre la liste des repertoires d'auteurs, peu importe le systeme d'exploitation
     cwd = os.getcwd()
     if os.path.isabs(args.d):
         rep_aut = args.d
@@ -409,13 +328,13 @@ if __name__ == "__main__":
     rep_aut = os.path.normpath(rep_aut)
     authors = os.listdir(rep_aut)
 
-    ### Enlever les signes de ponctuation (ou non) - Definis dans la liste PONC
+    # Enlever les signes de ponctuation (ou non) - Definis dans la liste PONC
     if args.P:
         remove_ponc = True
     else:
         remove_ponc = False
 
-    ### Si mode verbose, refleter les valeurs des parametres passes sur la ligne de commande
+    # Si mode verbose, refleter les valeurs des parametres passes sur la ligne de commande
     if args.v:
         print("Mode verbose:")
         print("Calcul avec les auteurs du repertoire: " + args.d)
@@ -445,23 +364,22 @@ if __name__ == "__main__":
             aut = a.split("/")
             print("    " + aut[-1])
 
-## A partir d'ici, vous devriez inclure les appels a votre code
+# A partir d'ici, vous devriez inclure les appels a votre code
 
     start = time.time()
-    # unitTestGenerateStats()
     if args.A and args.a:
         print("SVP ajuster votre ligne de commande avec -a (auteur specifique) OU -A (tous les auteurs)")
-    if args.A: # traite tous les auteurs du repertoire
+    if args.A:  # traite tous les auteurs du repertoire
         print("Estimated runtime: 40 seconds..")
         for a in authors:
             if a != ".DS_Store":
                 authorWords = []
                 textParser = TextParser(args.P)
-                textParser.processDirectory(args.d + "/"+ a, authorWords)
+                textParser.processDirectory(args.d + "/" + a, authorWords)
                 authorStats = Statistics(authorWords, args.m)
                 if args.F != None:
-                    ngrammeString = authorStats.getNemeMostFrequentNgrammeString(args.F)
-                    print("Le %d ieme %d-gramme le plus commun pour %s est:" %(args.F,args.m,a), ngrammeString)
+                    ngrammeString = authorStats.getNgrammeAtPosition(args.F)
+                    print("Le %d ieme %d-gramme le plus commun pour %s est:" % (args.F, args.m, a), ngrammeString)
 
                 if args.f != None:
                     monFichierWords = []
@@ -472,26 +390,22 @@ if __name__ == "__main__":
                 if args.G is not None and args.g is not None:
                     authorStats.generateTextFile(args.g, args.G, a, True)
 
-
-    if args.a: # traite un auteur specifique du repertoire
+    if args.a:  # traite un auteur specifique du repertoire
         authorWords = []
         textParser = TextParser(args.P)
         textParser.processDirectory(args.d + "/" + args.a, authorWords)
         authorStats = Statistics(authorWords,args.m)
         if args.F is not None:
-            print("Estimated runtime: 5 seconds..")
-            ngrammeString = authorStats.getNemeMostFrequentNgrammeString(args.F)
+            ngrammeString = authorStats.getNgrammeAtPosition(args.F)
             print("Le %d ieme %d-gramme le plus commun pour %s est:" % (args.F, args.m, args.a), ngrammeString)
 
         if args.f is not None:
-            print("Estimated runtime: 5 seconds..")
             monFichierWords = []
             textParser.processFile(args.f, monFichierWords)
             monFichierStats = Statistics(monFichierWords, args.m)
             print("Distance avec " + args.a + " : %0.3f" % monFichierStats.calculateDistance(authorStats))
 
         if args.G is not None and args.g is not None:
-            print("Estimated runtime: 6 seconds..")
             authorStats.generateTextFile(args.g, args.G, args.a, False)
 
     end = time.time()
